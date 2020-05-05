@@ -1,61 +1,65 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using static OpenP2P.NetworkIdentity;
+using System.IO;
+using System.Net;
+using System.Text;
 
 namespace OpenP2P
 {
-    public class NetworkServer
+    public class NetworkServer : NetworkProtocol
     {
-        public NetworkProtocol protocol = null;
+        //public NetworkProtocol protocol = null;
         public Dictionary<string, string> connections = new Dictionary<string, string>();
         public int receiveCnt = 0;
         static Stopwatch recieveTimer;
 
-        public NetworkServer(String localIP, int localPort)
+        public NetworkServer(int localPort, bool _isServer) : base(localPort, true)
         {
-            protocol = new NetworkProtocol(localIP, localPort, true);
-            protocol.AttachMessageListener(ChannelType.ConnectToServer, OnMessageConnectToServer);
-            protocol.AttachResponseListener(ChannelType.ConnectToServer, OnResponseConnectToServer);
-
-            protocol.AttachMessageListener(ChannelType.Heartbeat, OnMessageHeartbeat);
+            //protocol = new NetworkProtocol(localIP, localPort, true);
+            AttachRequestListener(ChannelType.Server, OnRequestServer);
+           
         }
-
         
-
-        public void OnMessageHeartbeat(object sender, NetworkMessage message)
+     
+        public void SendIpsum(EndPoint ep)
         {
-            MsgHeartbeat heartbeat = (MsgHeartbeat)message;
-            heartbeat.responseTimestamp = NetworkTime.Milliseconds();
-            protocol.SendResponse(heartbeat, heartbeat);
-            //Console.WriteLine("Received Heartbeat from ("+ message.peer.id +") :");
-            //Console.WriteLine(heartbeat.timestamp);
+            string path = Directory.GetCurrentDirectory();
+            path = Path.Combine(path + "/ipsum.txt");
+            string text = File.ReadAllText(path);
+            byte[] bytes = Encoding.ASCII.GetBytes(text);
 
-            /*for (int i = 0; i < NetworkConfig.MAXSEND; i++)
+            MessageStream dataStream = CreateMessage<MessageStream>();
+            dataStream.SetBuffer(bytes);
+
+            Console.WriteLine("User Connected, sending ipsum.txt of " + bytes.Length);
+            SendStream(ep, dataStream);
+        }
+
+        public void OnRequestServer(object sender, NetworkMessage message)
+        {
+            PerformanceTest();
+
+            MessageServer requestMsg = (MessageServer)message;
+            MessageServer responseMsg = CreateMessage<MessageServer>();
+           
+            responseMsg.method = requestMsg.method;
+            switch(requestMsg.method)
             {
-                //username += "JoeOfTex" + r.Next(1000, 100000) + r.Next(1000, 100000) + r.Next(1000, 100000);
-                MsgConnectToServer tmp = protocol.Create<MsgConnectToServer>();
-                tmp.msgUsername = "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789";
-                tmp.msgNumber = 10;
-                tmp.msgShort = 20;
-                tmp.msgBool = true;
+                case MessageServer.ServerMethod.CONNECT:
+                    SendIpsum(message.header.source);
 
-                protocol.SendReliableMessage(message.header.source, tmp);
-            }*/
-        }
+                    responseMsg.response.connect.connected = true;
+                    responseMsg.response.connect.sendRate = NetworkConfig.ThreadSendSleepPacketSizePerFrame;
+                    Console.WriteLine("Setting send rate: {0}", responseMsg.response.connect.sendRate);
+                    break;
+                case MessageServer.ServerMethod.HEARTBEAT:
 
-        private void OnResponseConnectToServer(object sender, NetworkMessage e)
-        {
-            PerformanceTest();
-
-            NetworkPacket packet = (NetworkPacket)sender;
-        }
-
-        public void OnMessageConnectToServer(object sender, NetworkMessage message)
-        {
-            PerformanceTest();
+                    break;
+            }
             
-            NetworkPacket packet = (NetworkPacket)sender;
+            SendResponse(requestMsg, responseMsg);
+            
         }
 
 
@@ -66,10 +70,10 @@ namespace OpenP2P
 
             receiveCnt++;
 
-            if (receiveCnt % 50 == 0 || receiveCnt == NetworkConfig.MAXSEND)
+            if (receiveCnt % 1 == 0 || receiveCnt == NetworkConfig.MAXSEND)
             {
                 //recieveTimer.Stop();
-                Console.WriteLine("SERVER Finished in " + receiveCnt + " packets in " + ((float)recieveTimer.ElapsedMilliseconds / 1000f) + " seconds");
+                Console.WriteLine("SERVER Finished " + receiveCnt + " packets in " + ((float)recieveTimer.ElapsedMilliseconds / 1000f) + " seconds");
                 NetworkConfig.ProfileReportAll();
             }
         }

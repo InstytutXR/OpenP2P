@@ -13,30 +13,35 @@ namespace OpenP2P
     public class NetworkConfig
     {
         public const int MAXCLIENTS = 1;
-        public const int MAXSEND = 10000;
+        public const int MAXSEND = 100;
 
         public const int MAX_SEND_THREADS = 1;
         public const int MAX_RECV_THREADS = 1;
         public const int MAX_RELIABLE_THREADS = 1;
 
-        public const int MessagePoolInitialCount = 10;
+        public const int MessagePoolInitialCount = 1500;
+        public const int PacketPoolBufferInitialCount = 1500;
 
-        public const int BufferPoolStartCount = 10;
-        public const int BufferMaxLength = 1460;
-        public const int SocketBufferCount = 1000;
+        public const int PacketPoolBufferMaxLength = 1500;
+
+        
+        public const int BufferMaxLength = 1500;
+        public const int SocketBufferCount = 1500;
         public const int SocketSendRate = 1000;
         public const int SocketReceiveTimeout = 0;
 
         //important to sleep more, since they are on infinite loops
-        public const int ThreadSendSleepPacketSizePerFrame = 1500;
-        public const int ThreadSendSleepPacketsPerFrame = 20;
+        public static int ThreadSendSleepPacketSizePerFrame = 80;
+        public static int ThreadSendSleepPacketsPerFrame = 333;
         public const int ThreadWaitingSleepTime = 1;
-        public const int ThreadSendRateSleepTime = 0;
-        public const int ThreadReliableSleepTime = 0;
-        public const int ThreadRecvProcessSleepTime = 2;
+        public const int ThreadSendRateSleepTime = 1;
+        public const int ThreadReliableSleepTime = 1;
+        public const int ThreadRecvProcessSleepTime = 1;
 
-        public static long SocketReliableRetryDelay = 1000;
-        public static long SocketReliableRetryAttempts = 10;
+        public static long SocketReliableRetryDelay = 200;
+        public static long SocketReliableRetryAttempts = 2;
+
+        public static long NetworkSendRate = 200;
 
         public static Stopwatch profiler = new Stopwatch();
         public static Dictionary<string, long> profileTimes = new Dictionary<string, long>();
